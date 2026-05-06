@@ -6,6 +6,7 @@ const STUDENT_COUNT = 24;
 const SCHOOL_HOME_URL = "https://swjb-h.goesw.kr";
 const SCHOOL_SCHEDULE_URL = "https://swjb-h.goesw.kr/swjb-h/ps/schdul/selectSchdulMainList.do?mi=8607";
 const SCHOOL_MEAL_URL = "https://swjb-h.goesw.kr/subList/31000019471";
+const ACADEMIC_SCHEDULE_SOURCE = "2026학사일정(11.17)여름방학짧게.xlsx";
 const NEIS_OFFICE_CODE = "J10";
 const NEIS_SCHOOL_CODE = "7530899";
 
@@ -27,6 +28,7 @@ const roleNames = {
 const boardCategories = ["전체", "공지", "과제", "질문", "자료", "사진", "잡담"];
 const blockedExtensions = [".exe", ".bat", ".cmd", ".msi", ".js", ".vbs", ".ps1", ".scr"];
 const allowedImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+const seatingColumnCounts = [4, 5, 5, 5, 5];
 const classStudents = [
   "한모세", "재홍강", "김덕용", "김동인", "김유빈", "김정연",
   "김태윤", "박건희", "박현빈", "성태우", "송유진", "우도형",
@@ -170,7 +172,11 @@ const seedState = {
   notifications: [
     { id: "n1", text: "새 공지: 5월 학급 운영 안내", createdAt: "2026-05-06 08:30", read: false },
     { id: "n2", text: "국어 독서록 제출 일정이 등록되었습니다.", createdAt: "2026-05-05 15:10", read: false }
-  ]
+  ],
+  seating: {
+    seats: createDefaultSeats(),
+    lastChangedAt: ""
+  }
 };
 
 let state = loadState();
@@ -190,6 +196,9 @@ function loadState() {
   }
   if (!loaded.studentName) {
     loaded.studentName = "1-8 학생";
+  }
+  if (!loaded.seating || !Array.isArray(loaded.seating.seats) || loaded.seating.seats.length !== STUDENT_COUNT) {
+    loaded.seating = cloneSeedState().seating;
   }
   return loaded;
 }
@@ -247,6 +256,43 @@ function uid(prefix) {
   return `${prefix}${Date.now()}${Math.random().toString(16).slice(2, 6)}`;
 }
 
+function createDefaultSeats() {
+  return classStudents.map((student, index) => ({ id: `seat-${index + 1}`, student, locked: false }));
+}
+
+function shuffled(items) {
+  const copy = items.slice();
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function seatIndex(columnIndex, rowIndex) {
+  let index = 0;
+  for (let i = 0; i < columnIndex; i += 1) index += seatingColumnCounts[i];
+  return index + rowIndex;
+}
+
+function frontFirstSeatIndexes() {
+  const maxRows = Math.max(...seatingColumnCounts);
+  const indexes = [];
+  for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
+    for (let columnIndex = 0; columnIndex < seatingColumnCounts.length; columnIndex += 1) {
+      if (rowIndex < seatingColumnCounts[columnIndex]) {
+        indexes.push(seatIndex(columnIndex, rowIndex));
+      }
+    }
+  }
+  return indexes;
+}
+
+function seatingStats() {
+  const locked = state.seating.seats.filter((seat) => seat.locked).length;
+  return { locked, random: STUDENT_COUNT - locked };
+}
+
 function visiblePosts() {
   const user = currentUser();
   return state.posts.filter((post) => !post.hidden || user.role === "admin");
@@ -279,6 +325,7 @@ function setView(view, board) {
     editor: "#editorView",
     calendar: "#calendarView",
     meal: "#mealView",
+    seating: "#seatingView",
     mypage: "#mypageView",
     admin: "#adminView"
   };
@@ -295,6 +342,7 @@ function render() {
   if (activeView === "editor") renderEditor();
   if (activeView === "calendar") renderCalendar();
   if (activeView === "meal") renderMeal();
+  if (activeView === "seating") renderSeating();
   if (activeView === "mypage") renderMyPage();
   if (activeView === "admin") renderAdmin();
   renderNotifications();
@@ -338,6 +386,7 @@ function renderHome() {
           <a href="${SCHOOL_HOME_URL}" target="_blank" rel="noopener">학교 홈페이지 열기</a>
           <a href="${SCHOOL_SCHEDULE_URL}" target="_blank" rel="noopener">공식 학사일정 보기</a>
           <a href="${SCHOOL_MEAL_URL}" target="_blank" rel="noopener">공식 급식메뉴 보기</a>
+          <p class="meta">학사일정 기준 자료: ${ACADEMIC_SCHEDULE_SOURCE}</p>
         </div>
       </section>
     </div>
@@ -497,8 +546,8 @@ function renderCalendar() {
         <div class="calendar-grid" id="calendarGrid">${cells.join("")}</div>
       </div>
       <aside class="source-panel">
-        <h3>공식 일정 불러오기</h3>
-        <p class="meta">수원정보과학고등학교 홈페이지와 같은 학교코드의 나이스 학사일정 데이터를 불러옵니다.</p>
+        <h3>학사일정 기준</h3>
+        <p class="meta">기준 자료는 ${ACADEMIC_SCHEDULE_SOURCE}입니다. 자동 표시가 가능한 달은 나이스 공개 일정으로 보강합니다.</p>
         <div id="scheduleStatus" class="empty">학사일정을 불러오는 중입니다.</div>
       </aside>
     </div>
@@ -608,6 +657,114 @@ function cleanMeal(menu) {
     .map((item) => item.trim())
     .filter(Boolean)
     .join(", ");
+}
+
+function renderSeating() {
+  const stats = seatingStats();
+  const fixedStudents = state.seating.seats.filter((seat) => seat.locked).map((seat) => seat.student);
+  const columns = seatingColumnCounts.map((count, columnIndex) => {
+    const seats = Array.from({ length: count }, (_, rowIndex) => {
+      const index = seatIndex(columnIndex, rowIndex);
+      const seat = state.seating.seats[index];
+      const frontLabel = rowIndex === 0 ? `<span class="front-tag">앞</span>` : "";
+      return `
+        <div class="seat-card ${seat.locked ? "locked" : ""}">
+          <div class="seat-meta">
+            <span>${columnIndex + 1}열-${rowIndex + 1}</span>
+            ${frontLabel}
+          </div>
+          <strong>${escapeHtml(seat.student)}</strong>
+          <label class="lock-control">
+            <input type="checkbox" data-seat-lock="${index}" ${seat.locked ? "checked" : ""}>
+            고정
+          </label>
+        </div>
+      `;
+    }).join("");
+    return `<div class="seat-column" aria-label="${columnIndex + 1}열">${seats}</div>`;
+  }).join("");
+
+  $("#seatingView").innerHTML = `
+    <div class="section-head">
+      <div>
+        <h2>학급 자리바꾸기</h2>
+        <p class="meta">교탁 쪽 앞자리부터 보입니다. 좌석은 왼쪽부터 4명, 5명, 5명, 5명, 5명으로 구성했습니다.</p>
+      </div>
+      <div class="toolbar">
+        <button id="frontFixBtn" type="button">앞자리 고정 적용</button>
+        <button id="shuffleSeatsBtn" class="primary" type="button">랜덤 자리바꾸기</button>
+      </div>
+    </div>
+
+    <div class="seating-layout">
+      <section class="panel seating-board-panel">
+        <div class="teacher-desk">교탁</div>
+        <div class="seating-board">${columns}</div>
+      </section>
+
+      <aside class="form-panel">
+        <h2>고정 학생 선택</h2>
+        <p class="meta">눈이 잘 안 보이는 학생을 체크한 뒤 앞자리 고정 적용을 누르면 앞줄부터 배치하고 고정합니다.</p>
+        <div class="student-check-list">
+          ${classStudents.map((student) => `
+            <label class="student-check">
+              <input type="checkbox" data-front-student="${escapeAttr(student)}" ${fixedStudents.includes(student) ? "checked" : ""}>
+              ${escapeHtml(student)}
+            </label>
+          `).join("")}
+        </div>
+        <div class="seat-summary">
+          <span>고정 ${stats.locked}명</span>
+          <span>랜덤 ${stats.random}명</span>
+          <span>전체 ${STUDENT_COUNT}명</span>
+        </div>
+        <button id="unlockSeatsBtn" type="button">전체 고정 해제</button>
+        <button id="resetSeatsBtn" class="danger" type="button">명렬표 순서로 초기화</button>
+        <p class="meta">${state.seating.lastChangedAt ? `마지막 변경: ${state.seating.lastChangedAt}` : "아직 자리바꾸기를 실행하지 않았습니다."}</p>
+      </aside>
+    </div>
+  `;
+}
+
+function shuffleUnlockedSeats() {
+  const lockedStudents = new Set(state.seating.seats.filter((seat) => seat.locked).map((seat) => seat.student));
+  const studentsToShuffle = shuffled(classStudents.filter((student) => !lockedStudents.has(student)));
+  let cursor = 0;
+  state.seating.seats = state.seating.seats.map((seat) => {
+    if (seat.locked) return seat;
+    const student = studentsToShuffle[cursor];
+    cursor += 1;
+    return { ...seat, student };
+  });
+  state.seating.lastChangedAt = nowText();
+  saveState();
+  render();
+}
+
+function applyFrontFixedSeats() {
+  const checked = Array.from(document.querySelectorAll("[data-front-student]:checked")).map((input) => input.dataset.frontStudent);
+  const fixedSet = new Set(checked);
+  const fixedStudents = checked.filter((student) => classStudents.includes(student)).slice(0, STUDENT_COUNT);
+  const remainingStudents = shuffled(classStudents.filter((student) => !fixedSet.has(student)));
+  const nextSeats = state.seating.seats.map((seat) => ({ ...seat, locked: false }));
+  const frontIndexes = frontFirstSeatIndexes();
+
+  fixedStudents.forEach((student, index) => {
+    const seatIndex = frontIndexes[index];
+    nextSeats[seatIndex] = { ...nextSeats[seatIndex], student, locked: true };
+  });
+
+  let cursor = 0;
+  nextSeats.forEach((seat, index) => {
+    if (seat.locked) return;
+    seat.student = remainingStudents[cursor];
+    cursor += 1;
+  });
+
+  state.seating.seats = nextSeats;
+  state.seating.lastChangedAt = nowText();
+  saveState();
+  render();
 }
 
 function renderMyPage() {
@@ -848,6 +1005,27 @@ document.addEventListener("click", (event) => {
     $("#notificationDrawer").classList.add("hidden");
   }
 
+  if (target.id === "shuffleSeatsBtn") {
+    shuffleUnlockedSeats();
+  }
+
+  if (target.id === "frontFixBtn") {
+    applyFrontFixedSeats();
+  }
+
+  if (target.id === "unlockSeatsBtn") {
+    state.seating.seats = state.seating.seats.map((seat) => ({ ...seat, locked: false }));
+    state.seating.lastChangedAt = nowText();
+    saveState();
+    render();
+  }
+
+  if (target.id === "resetSeatsBtn" && confirm("현재 자리 배치를 명렬표 순서로 초기화할까요?")) {
+    state.seating = { seats: createDefaultSeats(), lastChangedAt: nowText() };
+    saveState();
+    render();
+  }
+
   const approveUser = target.closest("[data-approve-user]");
   if (approveUser) {
     const user = state.users.find((item) => item.id === approveUser.dataset.approveUser);
@@ -975,6 +1153,15 @@ document.addEventListener("change", (event) => {
   if (event.target.id === "fileLimitMb") {
     state.fileLimitMb = Number(event.target.value);
     saveState();
+  }
+
+  const seatLock = event.target.closest("[data-seat-lock]");
+  if (seatLock) {
+    const index = Number(seatLock.dataset.seatLock);
+    state.seating.seats[index].locked = seatLock.checked;
+    state.seating.lastChangedAt = nowText();
+    saveState();
+    render();
   }
 });
 

@@ -572,6 +572,129 @@ textarea {
   line-height: 1.6;
 }
 
+.seating-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .34fr);
+  gap: 16px;
+}
+
+.seating-board-panel {
+  padding: 18px;
+}
+
+.teacher-desk {
+  width: min(360px, 86%);
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border: 1px solid #b7c5d6;
+  border-radius: 8px;
+  background: #e9eef5;
+  color: #314154;
+  font-weight: 800;
+}
+
+.seating-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.seat-column {
+  display: grid;
+  gap: 10px;
+}
+
+.seat-card {
+  min-height: 92px;
+  display: grid;
+  gap: 8px;
+  align-content: space-between;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.seat-card.locked {
+  border-color: #f2c27a;
+  background: #fff8eb;
+}
+
+.seat-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.seat-card strong {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.front-tag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: #14532d;
+  font-weight: 800;
+}
+
+.lock-control, .student-check {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 7px;
+}
+
+.lock-control {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.lock-control input, .student-check input {
+  width: auto;
+}
+
+.student-check-list {
+  max-height: 420px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.student-check {
+  min-height: 36px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.seat-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.seat-summary span {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, .8fr);
@@ -651,12 +774,17 @@ textarea {
     margin-top: 0;
   }
 
-  .hero, .dashboard-grid, .editor-grid, .admin-grid, .source-grid {
+  .hero, .dashboard-grid, .editor-grid, .admin-grid, .source-grid, .seating-layout {
     grid-template-columns: 1fr;
   }
 
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seating-board {
+    grid-template-columns: repeat(5, minmax(72px, 1fr));
+    overflow-x: auto;
   }
 }
 
@@ -672,6 +800,14 @@ textarea {
   }
 
   .auth-grid, .stats, .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seating-board {
+    grid-template-columns: repeat(5, 94px);
+  }
+
+  .student-check-list, .seat-summary {
     grid-template-columns: 1fr;
   }
 
