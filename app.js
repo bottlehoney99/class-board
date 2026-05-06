@@ -266,8 +266,12 @@ const $ = (selector) => document.querySelector(selector);
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  const loaded = saved ? JSON.parse(saved) : cloneSeedState();
-  return normalizeState(loaded);
+  const local = saved ? JSON.parse(saved) : {};
+  return normalizeState({
+    ...cloneSeedState(),
+    currentUserId: local.currentUserId || "guest",
+    studentName: local.studentName || "1-8 학생"
+  });
 }
 
 function normalizeState(loaded) {
@@ -289,15 +293,16 @@ function normalizeState(loaded) {
   if (!loaded.seating || !Array.isArray(loaded.seating.seats) || loaded.seating.seats.length !== STUDENT_COUNT) {
     loaded.seating = cloneSeedState().seating;
   }
-  if (loaded.academicScheduleSource !== ACADEMIC_SCHEDULE_SOURCE) {
-    loaded.academicScheduleSource = ACADEMIC_SCHEDULE_SOURCE;
-    loaded.events = academicEvents;
-  }
+  loaded.academicScheduleSource = ACADEMIC_SCHEDULE_SOURCE;
+  loaded.events = academicEvents;
   return loaded;
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    currentUserId: state.currentUserId,
+    studentName: state.studentName
+  }));
   scheduleRemoteStateSave();
 }
 
@@ -329,7 +334,7 @@ function applySharedStateData(data) {
     ...data,
     ...localSession
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(localSession));
 }
 
 async function initSupabaseState() {
@@ -339,7 +344,6 @@ async function initSupabaseState() {
   }
 
   supabaseDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-  remoteStateReady = true;
 
   const { data, error } = await supabaseDb
     .from(SUPABASE_STATE_TABLE)
@@ -352,11 +356,14 @@ async function initSupabaseState() {
     return;
   }
 
+  remoteStateReady = true;
+
   if (data?.data) {
     applyingRemoteState = true;
     applySharedStateData(data.data);
     applyingRemoteState = false;
     render();
+    saveStateToSupabase();
     return;
   }
 
