@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>수원정보과학고 1학년 8반 게시판</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="주요 메뉴">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">반</div>
+        <div>
+          <strong>1학년 8반 게시판</strong>
+          <span>수원정보과학고 · IT소프트웨어과</span>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="home" type="button">홈</button>
+        <button class="nav-item" data-view="board" data-board="notice" type="button">공지사항</button>
+        <button class="nav-item" data-view="board" data-board="homework" type="button">숙제/과제</button>
+        <button class="nav-item" data-view="board" data-board="supplies" type="button">준비물</button>
+        <button class="nav-item" data-view="board" data-board="question" type="button">질문</button>
+        <button class="nav-item" data-view="board" data-board="free" type="button">자유게시판</button>
+        <button class="nav-item" data-view="board" data-board="gallery" type="button">사진첩</button>
+        <button class="nav-item" data-view="calendar" type="button">학사일정</button>
+        <button class="nav-item" data-view="meal" type="button">급식표</button>
+        <button class="nav-item" data-view="board" data-board="archive" type="button">자료실</button>
+        <button class="nav-item admin-link" data-view="admin" type="button">관리</button>
+      </nav>
+
+      <div class="role-card">
+        <span>학급 정보</span>
+        <strong id="currentUserLabel">학생 열람 모드</strong>
+        <p>1학년 8반 · 24명</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <form class="search" id="searchForm">
+          <input id="searchInput" type="search" placeholder="게시글 검색" autocomplete="off">
+          <button type="submit" title="검색">검색</button>
+        </form>
+        <div class="top-actions">
+          <button id="openNotifications" class="icon-button" type="button" title="알림">
+            <span id="notificationCount">0</span>
+          </button>
+          <button id="loginToggle" class="primary" type="button">관리자 로그인</button>
+        </div>
+      </header>
+
+      <section id="authPanel" class="auth-panel hidden" aria-label="관리자 로그인">
+        <div class="auth-grid">
+          <form id="loginForm" class="form-panel">
+            <h2>관리자 로그인</h2>
+            <label>아이디<input name="id" required value="admin01"></label>
+            <label>비밀번호<input name="password" type="password" required value="1234"></label>
+            <button id="adminLoginBtn" class="primary" type="submit">관리자 모드로 전환</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="homeView" class="view"></section>
+      <section id="boardView" class="view hidden"></section>
+      <section id="detailView" class="view hidden"></section>
+      <section id="editorView" class="view hidden"></section>
+      <section id="calendarView" class="view hidden"></section>
+      <section id="mealView" class="view hidden"></section>
+      <section id="mypageView" class="view hidden"></section>
+      <section id="adminView" class="view hidden"></section>
+    </main>
+  </div>
+
+  <div id="notificationDrawer" class="drawer hidden" role="dialog" aria-modal="true" aria-label="알림">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2>알림</h2>
+        <button id="closeNotifications" class="icon-button" type="button" title="닫기">×</button>
+      </div>
+      <div id="notificationList"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
