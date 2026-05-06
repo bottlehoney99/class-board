@@ -1,4 +1,8 @@
 const STORAGE_KEY = "class-board-state-v2";
+const SUPABASE_URL = "https://bxydptizntolzhaonbgj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_hQkfigCuI2xF9rh6vqToBg_QY1QEpK7";
+const SUPABASE_STATE_TABLE = "class_board_state";
+const SUPABASE_STATE_ID = "main";
 const SCHOOL_NAME = "수원정보과학고등학교";
 const CLASS_NAME = "1학년 8반";
 const DEPARTMENT_NAME = "IT소프트웨어과";
@@ -35,12 +39,86 @@ const classStudents = [
   "이병수", "이승언", "이시후", "이예은", "이준상", "임승현",
   "정세민", "정율교", "최민호", "최은호", "최재석", "황예슬"
 ];
+const academicEvents = [
+  { date: "2026-03-01", title: "삼일절" },
+  { date: "2026-03-02", title: "대체공휴일" },
+  { date: "2026-03-03", title: "입학식, 개학식 신입생0T" },
+  { date: "2026-03-04", title: "신입생0T" },
+  { date: "2026-03-09", title: "진로캠프 / (1,3학년)" },
+  { date: "2026-03-10", title: "진로캠프 / (1학년)" },
+  { date: "2026-03-16", title: "학부모상담 / 주간(~20일)" },
+  { date: "2026-03-17", title: "학부모총회" },
+  { date: "2026-03-18", title: "기초학력진단(2학년)" },
+  { date: "2026-03-19", title: "기초학력진단(1학년)" },
+  { date: "2026-04-01", title: "체험학습(2학년)" },
+  { date: "2026-04-02", title: "체험학습(2학년)" },
+  { date: "2026-04-03", title: "체험학습(1~3학년)" },
+  { date: "2026-04-05", title: "식목일" },
+  { date: "2026-04-06", title: "경기도기능대회 / (~10일)" },
+  { date: "2026-04-30", title: "1차 지필평가" },
+  { date: "2026-05-01", title: "1차 지필평가" },
+  { date: "2026-05-04", title: "재량휴업일" },
+  { date: "2026-05-05", title: "어린이날" },
+  { date: "2026-05-15", title: "어울림한마당" },
+  { date: "2026-05-24", title: "부처님오신날" },
+  { date: "2026-05-25", title: "대체공휴일" },
+  { date: "2026-05-26", title: "공개수업주간(~29일)" },
+  { date: "2026-06-03", title: "지방선거일" },
+  { date: "2026-06-05", title: "직기초 / (1학년)" },
+  { date: "2026-06-06", title: "현충일" },
+  { date: "2026-06-12", title: "직기초 / (2학년)" },
+  { date: "2026-06-30", title: "2차 지필평가" },
+  { date: "2026-07-01", title: "2차 지필평가" },
+  { date: "2026-07-02", title: "2차 지필평가" },
+  { date: "2026-07-03", title: "2차 지필평가" },
+  { date: "2026-07-07", title: "학생회장선거" },
+  { date: "2026-07-09", title: "직기초 / (3학년)" },
+  { date: "2026-07-15", title: "1학기사정회" },
+  { date: "2026-07-17", title: "방학식(창체)" },
+  { date: "2026-08-15", title: "광복절" },
+  { date: "2026-08-17", title: "대체공휴일" },
+  { date: "2026-08-18", title: "개학식 / (2학기시작)" },
+  { date: "2026-08-22", title: "전국기능대회(~28일)" },
+  { date: "2026-08-31", title: "학부모상담 / 주간(~9/4)" },
+  { date: "2026-09-24", title: "추석" },
+  { date: "2026-09-25", title: "추석" },
+  { date: "2026-09-26", title: "추석" },
+  { date: "2026-09-27", title: "추석" },
+  { date: "2026-09-30", title: "수업산출물 / 발표회" },
+  { date: "2026-10-03", title: "개천절" },
+  { date: "2026-10-05", title: "대체공휴일" },
+  { date: "2026-10-09", title: "한글날" },
+  { date: "2026-10-13", title: "1차 지필평가 / (졸업고사)" },
+  { date: "2026-10-14", title: "1차 지필평가 / (졸업고사)" },
+  { date: "2026-10-26", title: "공개수업주간(~10/30)" },
+  { date: "2026-11-10", title: "신입생입학전형면접(4교시)" },
+  { date: "2026-11-11", title: "수능감독자 / 연수(3교시)" },
+  { date: "2026-11-12", title: "재량휴업일 / (대수능)" },
+  { date: "2026-11-19", title: "3학년 / 졸업사정회" },
+  { date: "2026-11-26", title: "신입생예비 / 소집일" },
+  { date: "2026-12-07", title: "2차 지필평가" },
+  { date: "2026-12-08", title: "2차 지필평가" },
+  { date: "2026-12-09", title: "2차 지필평가" },
+  { date: "2026-12-10", title: "2차 지필평가" },
+  { date: "2026-12-17", title: "교육공동체 / 대토론회" },
+  { date: "2026-12-25", title: "크리스마스" },
+  { date: "2026-12-29", title: "합창제 / (1~4교시)" },
+  { date: "2026-12-30", title: "꿈끼꾼한마당" },
+  { date: "2026-12-31", title: "1,2학년 / 진급사정회" },
+  { date: "2027-01-01", title: "신정" },
+  { date: "2027-01-06", title: "졸업식 / (종업식)(창체)" },
+  { date: "2027-02-06", title: "설날" },
+  { date: "2027-02-07", title: "설날" },
+  { date: "2027-02-08", title: "설날" },
+  { date: "2027-02-09", title: "설날" }
+];
 
 const seedState = {
   currentUserId: "guest",
   guestReadable: true,
   studentName: "1-8 학생",
   fileLimitMb: 20,
+  academicScheduleSource: ACADEMIC_SCHEDULE_SOURCE,
   users: [
     { id: "admin01", password: "1234", name: "1-8 관리자", studentNo: "-", role: "admin", className: CLASS_NAME, approved: true }
   ],
@@ -162,13 +240,7 @@ const seedState = {
       comments: []
     }
   ],
-  events: [
-    { date: "2026-05-07", title: "미술 수행평가" },
-    { date: "2026-05-11", title: "학급 회의" },
-    { date: "2026-05-15", title: "체육대회" },
-    { date: "2026-05-20", title: "수학 단원평가" },
-    { date: "2026-05-27", title: "진로 활동" }
-  ],
+  events: academicEvents,
   notifications: [
     { id: "n1", text: "새 공지: 5월 학급 운영 안내", createdAt: "2026-05-06 08:30", read: false },
     { id: "n2", text: "국어 독서록 제출 일정이 등록되었습니다.", createdAt: "2026-05-05 15:10", read: false }
@@ -185,12 +257,29 @@ let activeBoard = "notice";
 let activePostId = null;
 let editingPostId = null;
 let searchTerm = "";
+let supabaseDb = null;
+let remoteStateReady = false;
+let remoteSaveTimer = null;
+let applyingRemoteState = false;
 
 const $ = (selector) => document.querySelector(selector);
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
   const loaded = saved ? JSON.parse(saved) : cloneSeedState();
+  return normalizeState(loaded);
+}
+
+function normalizeState(loaded) {
+  const defaults = cloneSeedState();
+  loaded = {
+    ...defaults,
+    ...loaded,
+    users: Array.isArray(loaded.users) ? loaded.users : defaults.users,
+    posts: Array.isArray(loaded.posts) ? loaded.posts : defaults.posts,
+    events: Array.isArray(loaded.events) ? loaded.events : defaults.events,
+    notifications: Array.isArray(loaded.notifications) ? loaded.notifications : defaults.notifications
+  };
   if (!loaded.users.some((user) => user.id === "admin01")) {
     loaded.users.push(seedState.users[0]);
   }
@@ -200,15 +289,99 @@ function loadState() {
   if (!loaded.seating || !Array.isArray(loaded.seating.seats) || loaded.seating.seats.length !== STUDENT_COUNT) {
     loaded.seating = cloneSeedState().seating;
   }
+  if (loaded.academicScheduleSource !== ACADEMIC_SCHEDULE_SOURCE) {
+    loaded.academicScheduleSource = ACADEMIC_SCHEDULE_SOURCE;
+    loaded.events = academicEvents;
+  }
   return loaded;
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleRemoteStateSave();
 }
 
 function cloneSeedState() {
   return JSON.parse(JSON.stringify(seedState));
+}
+
+function sharedStateData() {
+  return {
+    guestReadable: state.guestReadable,
+    fileLimitMb: state.fileLimitMb,
+    academicScheduleSource: state.academicScheduleSource,
+    users: state.users,
+    posts: state.posts,
+    events: state.events,
+    notifications: state.notifications,
+    seating: state.seating
+  };
+}
+
+function applySharedStateData(data) {
+  if (!data || typeof data !== "object") return;
+  const localSession = {
+    currentUserId: state.currentUserId,
+    studentName: state.studentName
+  };
+  state = normalizeState({
+    ...state,
+    ...data,
+    ...localSession
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+async function initSupabaseState() {
+  if (!window.supabase) {
+    console.warn("Supabase library is not loaded. Local browser storage will be used.");
+    return;
+  }
+
+  supabaseDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  remoteStateReady = true;
+
+  const { data, error } = await supabaseDb
+    .from(SUPABASE_STATE_TABLE)
+    .select("data")
+    .eq("id", SUPABASE_STATE_ID)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("Supabase state load failed. Check table and RLS policy.", error);
+    return;
+  }
+
+  if (data?.data) {
+    applyingRemoteState = true;
+    applySharedStateData(data.data);
+    applyingRemoteState = false;
+    render();
+    return;
+  }
+
+  saveStateToSupabase();
+}
+
+function scheduleRemoteStateSave() {
+  if (!remoteStateReady || applyingRemoteState) return;
+  clearTimeout(remoteSaveTimer);
+  remoteSaveTimer = setTimeout(saveStateToSupabase, 500);
+}
+
+async function saveStateToSupabase() {
+  if (!supabaseDb) return;
+  const { error } = await supabaseDb
+    .from(SUPABASE_STATE_TABLE)
+    .upsert({
+      id: SUPABASE_STATE_ID,
+      data: sharedStateData(),
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.warn("Supabase state save failed. Check table and RLS policy.", error);
+  }
 }
 
 function currentUser() {
@@ -547,12 +720,11 @@ function renderCalendar() {
       </div>
       <aside class="source-panel">
         <h3>학사일정 기준</h3>
-        <p class="meta">기준 자료는 ${ACADEMIC_SCHEDULE_SOURCE}입니다. 자동 표시가 가능한 달은 나이스 공개 일정으로 보강합니다.</p>
-        <div id="scheduleStatus" class="empty">학사일정을 불러오는 중입니다.</div>
+        <p class="meta">기준 자료는 ${ACADEMIC_SCHEDULE_SOURCE}입니다.</p>
+        <div id="scheduleStatus" class="empty">엑셀 기준 일정 ${academicEvents.length}건을 표시 중입니다.</div>
       </aside>
     </div>
   `;
-  loadSchedule(year, month + 1);
 }
 
 function renderMeal() {
@@ -563,6 +735,7 @@ function renderMeal() {
     </div>
     <div class="source-grid">
       <section>
+        <h2 class="subhead">이번주 급식메뉴</h2>
         <div id="mealList" class="meal-list">${empty("급식표를 불러오는 중입니다.")}</div>
       </section>
       <aside class="source-panel">
@@ -632,18 +805,29 @@ function renderCalendarCells(year, month) {
 async function loadMeals() {
   const today = new Date();
   const start = new Date(today);
-  const end = new Date(today);
-  end.setDate(end.getDate() + 6);
+  const day = start.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diffToMonday);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 4);
   try {
     const response = await fetch(neisUrl("mealServiceDietInfo", { MLSV_FROM_YMD: ymd(start), MLSV_TO_YMD: ymd(end) }));
     const data = await response.json();
     const rows = data.mealServiceDietInfo?.[1]?.row || [];
-    $("#mealList").innerHTML = rows.length ? rows.map((row) => `
+    const mealsByDate = new Map(rows.map((row) => [row.MLSV_YMD, row]));
+    const weekdays = ["월", "화", "수", "목", "금"];
+    $("#mealList").innerHTML = weekdays.map((label, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      const key = ymd(date);
+      const row = mealsByDate.get(key);
+      return `
       <article class="meal-day">
-        <strong>${formatYmd(row.MLSV_YMD)} · ${row.MMEAL_SC_NM}</strong>
-        <p>${cleanMeal(row.DDISH_NM)}</p>
+        <strong>${label} · ${formatYmd(key)}</strong>
+        <p>${row ? cleanMeal(row.DDISH_NM) : "등록된 급식 정보가 없습니다."}</p>
       </article>
-    `).join("") : empty("이번 주 등록된 급식 정보가 없습니다.");
+      `;
+    }).join("");
   } catch (error) {
     $("#mealList").innerHTML = empty("급식 자동 불러오기에 실패했습니다. 오른쪽 공식 급식메뉴 페이지에서 확인해주세요.");
   }
@@ -1166,3 +1350,4 @@ document.addEventListener("change", (event) => {
 });
 
 setView("home");
+initSupabaseState();

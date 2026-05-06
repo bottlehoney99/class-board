@@ -548,9 +548,14 @@ textarea {
   font-weight: 700;
 }
 
+.subhead {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
 .meal-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
   gap: 10px;
 }
 
@@ -786,6 +791,11 @@ textarea {
     grid-template-columns: repeat(5, minmax(72px, 1fr));
     overflow-x: auto;
   }
+
+  .meal-list {
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    overflow-x: auto;
+  }
 }
 
 @media (max-width: 620px) {
@@ -808,6 +818,10 @@ textarea {
   }
 
   .student-check-list, .seat-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-list {
     grid-template-columns: 1fr;
   }
 
