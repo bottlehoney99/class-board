@@ -20,7 +20,7 @@ const boards = {
 };
 
 const roleNames = {
-  guest: "비회원",
+  student: "학생",
   admin: "관리자"
 };
 
@@ -37,7 +37,7 @@ const classStudents = [
 const seedState = {
   currentUserId: "guest",
   guestReadable: true,
-  commentsEnabled: true,
+  studentName: "1-8 학생",
   fileLimitMb: 20,
   users: [
     { id: "admin01", password: "1234", name: "1-8 관리자", studentNo: "-", role: "admin", className: CLASS_NAME, approved: true }
@@ -188,6 +188,9 @@ function loadState() {
   if (!loaded.users.some((user) => user.id === "admin01")) {
     loaded.users.push(seedState.users[0]);
   }
+  if (!loaded.studentName) {
+    loaded.studentName = "1-8 학생";
+  }
   return loaded;
 }
 
@@ -201,18 +204,23 @@ function cloneSeedState() {
 
 function currentUser() {
   if (state.currentUserId === "guest") {
-    return { id: "guest", name: "비회원", role: "guest", approved: true };
+    return { id: "student", name: state.studentName || "1-8 학생", role: "student", approved: true };
   }
   return state.users.find((user) => user.id === state.currentUserId) || state.users[0];
 }
 
 function canRead() {
-  return currentUser().role !== "guest" || state.guestReadable;
+  return currentUser().role === "student" || currentUser().role === "admin" || state.guestReadable;
 }
 
 function canWrite(board) {
   const role = currentUser().role;
-  return role === "admin";
+  return role === "student" || role === "admin";
+}
+
+function canComment() {
+  const role = currentUser().role;
+  return role === "student" || role === "admin";
 }
 
 function canManagePost(post) {
@@ -225,6 +233,7 @@ function canAdmin() {
 }
 
 function authorName(id) {
+  if (id === "student") return state.studentName || "1-8 학생";
   return state.users.find((user) => user.id === id)?.name || "알 수 없음";
 }
 
@@ -293,8 +302,8 @@ function render() {
 
 function renderShell() {
   const user = currentUser();
-  $("#currentUserLabel").textContent = user.role === "guest" ? "학생 열람 모드" : `${user.name} · ${roleNames[user.role]}`;
-  $("#loginToggle").textContent = user.role === "guest" ? "관리자 로그인" : "관리자 메뉴";
+  $("#currentUserLabel").textContent = user.role === "student" ? "학생 모드" : `${user.name} · ${roleNames[user.role]}`;
+  $("#loginToggle").textContent = user.role === "student" ? "관리자 로그인" : "관리자 메뉴";
   $(".admin-link").classList.toggle("hidden", user.role !== "admin");
   $("#notificationCount").textContent = state.notifications.filter((item) => !item.read).length;
 }
@@ -370,7 +379,7 @@ function postCard(post) {
         </div>
         <h3>${escapeHtml(post.title)}</h3>
         <p>${escapeHtml(post.content).slice(0, 100)}${post.content.length > 100 ? "..." : ""}</p>
-        <div class="meta">${authorName(post.authorId)} · ${post.createdAt} · 조회 ${post.views} · 댓글 ${comments}</div>
+        <div class="meta">${escapeHtml(post.authorName || authorName(post.authorId))} · ${post.createdAt} · 조회 ${post.views} · 댓글 ${comments}</div>
       </div>
       <div class="post-actions">
         <button type="button" title="열기" data-open-post="${post.id}">보기</button>
@@ -401,18 +410,19 @@ function renderDetail() {
           <span class="badge">${post.category}</span>
         </div>
         <h1>${escapeHtml(post.title)}</h1>
-        <div class="meta">${authorName(post.authorId)} · ${post.createdAt} · 조회 ${post.views}</div>
+        <div class="meta">${escapeHtml(post.authorName || authorName(post.authorId))} · ${post.createdAt} · 조회 ${post.views}</div>
         <div class="detail-content">${escapeHtml(post.content)}</div>
         <div class="attachment-list">${(post.attachments || []).map((file) => `<span class="attachment">${escapeHtml(file)}</span>`).join("")}</div>
       </article>
       <section>
         <div class="section-head"><h2>댓글 ${post.comments.length}</h2></div>
         <div class="comments">${post.comments.map(commentView).join("") || empty("댓글이 없습니다.")}</div>
-        ${state.commentsEnabled && currentUser().role !== "guest" ? `
+        ${canComment() ? `
           <form id="commentForm" class="comment-form">
+            ${currentUser().role === "student" ? `<input name="authorName" placeholder="이름 또는 별명" value="${escapeAttr(state.studentName || "1-8 학생")}" required>` : ""}
             <textarea name="content" placeholder="댓글을 입력하세요" required></textarea>
             <button class="primary" type="submit">댓글 등록</button>
-          </form>` : ""}
+          </form>` : `<div class="empty">댓글 작성이 꺼져 있습니다.</div>`}
       </section>
     </div>
   `;
@@ -422,7 +432,7 @@ function commentView(comment) {
   const mine = currentUser().role === "admin";
   return `
     <div class="comment">
-      <strong>${authorName(comment.authorId)}</strong>
+      <strong>${escapeHtml(comment.authorName || authorName(comment.authorId))}</strong>
       <div class="meta">${comment.createdAt}</div>
       <p>${escapeHtml(comment.content)}</p>
       ${mine ? `<button class="danger" type="button" data-delete-comment="${comment.id}">삭제</button>` : ""}
@@ -437,6 +447,7 @@ function renderEditor() {
     <form id="postForm" class="editor-grid">
       <section class="form-panel">
         <h2>${post ? "글 수정" : "새 글 작성"}</h2>
+        ${currentUser().role === "student" && !post ? `<label>작성자<input name="authorName" required value="${escapeAttr(state.studentName || "1-8 학생")}" placeholder="이름 또는 별명"></label>` : ""}
         <label>제목<input name="title" required value="${escapeAttr(post?.title || "")}"></label>
         <label>내용<textarea name="content" required>${escapeHtml(post?.content || "")}</textarea></label>
         <label>첨부파일<input name="files" type="file" multiple></label>
@@ -457,7 +468,7 @@ function renderEditor() {
             ${boardCategories.filter((cat) => cat !== "전체").map((cat) => `<option ${cat === (post?.category || "공지") ? "selected" : ""}>${cat}</option>`).join("")}
           </select>
         </label>
-        <label><input name="pinned" type="checkbox" ${post?.pinned ? "checked" : ""}> 중요 공지 상단 고정</label>
+        ${currentUser().role === "admin" ? `<label><input name="pinned" type="checkbox" ${post?.pinned ? "checked" : ""}> 중요 공지 상단 고정</label>` : `<p class="meta">학생 글은 공개 게시글로 등록되며, 수정/삭제와 상단 고정은 관리자만 할 수 있습니다.</p>`}
       </aside>
     </form>
   `;
@@ -657,8 +668,7 @@ function renderAdmin() {
       <section class="form-panel">
         <h2>게시판 설정</h2>
         <label><input id="guestReadable" type="checkbox" ${state.guestReadable ? "checked" : ""}> 비회원 열람 허용</label>
-        <p class="meta">학생은 로그인 없이 열람만 가능하고, 게시글 작성/수정/삭제는 관리자만 할 수 있습니다.</p>
-        <label><input id="commentsEnabled" type="checkbox" ${state.commentsEnabled ? "checked" : ""}> 댓글 허용</label>
+        <p class="meta">학생은 로그인 없이 글 열람, 글 작성, 댓글 작성이 가능하고, 수정/삭제와 게시판 관리는 관리자만 할 수 있습니다.</p>
         <label>첨부파일 용량 제한(MB)<input id="fileLimitMb" type="number" min="1" max="100" value="${state.fileLimitMb}"></label>
         <h2>명렬표</h2>
         <p class="meta">${CLASS_NAME} ${STUDENT_COUNT}명</p>
@@ -809,7 +819,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.id === "loginToggle") {
-    if (currentUser().role === "guest") {
+    if (currentUser().role === "student") {
       $("#authPanel").classList.toggle("hidden");
     } else {
       setView("mypage");
@@ -902,10 +912,15 @@ document.addEventListener("submit", (event) => {
       Object.assign(state.posts.find((post) => post.id === editingPostId), payload);
       activePostId = editingPostId;
     } else {
+      const authorNameInput = String(data.get("authorName") || state.studentName || "1-8 학생").trim();
+      if (currentUser().role === "student") {
+        state.studentName = authorNameInput;
+      }
       const post = {
         id: uid("p"),
         ...payload,
         authorId: currentUser().id,
+        authorName: currentUser().role === "student" ? authorNameInput : currentUser().name,
         createdAt: nowText(),
         views: 0,
         hidden: false,
@@ -922,9 +937,23 @@ document.addEventListener("submit", (event) => {
   }
 
   if (form.id === "commentForm") {
+    if (!canComment()) {
+      alert("현재 댓글을 작성할 수 없습니다.");
+      return;
+    }
     const post = state.posts.find((item) => item.id === activePostId);
     const data = new FormData(form);
-    post.comments.push({ id: uid("c"), authorId: currentUser().id, content: data.get("content"), createdAt: nowText() });
+    const authorNameInput = String(data.get("authorName") || state.studentName || "1-8 학생").trim();
+    if (currentUser().role === "student") {
+      state.studentName = authorNameInput;
+    }
+    post.comments.push({
+      id: uid("c"),
+      authorId: currentUser().id,
+      authorName: currentUser().role === "student" ? authorNameInput : currentUser().name,
+      content: data.get("content"),
+      createdAt: nowText()
+    });
     state.notifications.unshift({ id: uid("n"), text: `댓글 등록: ${post.title}`, createdAt: nowText(), read: false });
     saveState();
     render();
@@ -938,7 +967,7 @@ document.addEventListener("change", (event) => {
     $("#boardList").innerHTML = posts.map(postCard).join("") || empty("조건에 맞는 게시글이 없습니다.");
   }
 
-  if (["guestReadable", "commentsEnabled"].includes(event.target.id)) {
+  if (["guestReadable"].includes(event.target.id)) {
     state[event.target.id] = event.target.checked;
     saveState();
   }
